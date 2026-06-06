@@ -74,7 +74,7 @@ func (e *Executor) ExecuteLocalTask(taskID int, keywords, platforms []string, qu
 	e.taskRepo.UpdateStatus(taskID, "running", nil)
 
 	delay := 5 * time.Second
-	headless := true
+	headless := false
 	if e.providerFact != nil {
 		headless = e.providerFact.IsHeadless()
 	}

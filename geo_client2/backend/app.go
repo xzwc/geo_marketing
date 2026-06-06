@@ -78,7 +78,7 @@ func (a *App) Startup(ctx context.Context) {
 
 	// Initialize provider factory
 	headlessStr, _ := a.settingsSvc.Get("browser_headless")
-	headless := headlessStr != "false" // Default to true if not set or "true"
+	headless := headlessStr == "true" // Default to false if not set
 	a.providerFact = provider.NewFactory(headless, 60000)
 
 	// Initialize publish manager

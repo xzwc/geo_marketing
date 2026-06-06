@@ -6,7 +6,7 @@ import { ScrapeFlowManager } from '@/components/ScrapeFlowManager';
 import pkg from '../../package.json';
 
 export default function Settings() {
-  const [headless, setHeadless] = useState(true);
+  const [headless, setHeadless] = useState(false);
   const [aiPublishEnabled, setAIPublishEnabled] = useState(true);
   const [aiBaseURL, setAIBaseURL] = useState('');
   const [aiApiKey, setAIApiKey] = useState('');
@@ -27,7 +27,7 @@ export default function Settings() {
   const loadSettings = async () => {
     try {
       const value = await wailsAPI.settings.get('browser_headless');
-      setHeadless(value !== 'false'); // Default to true if not set or not 'false'
+      setHeadless(value === 'true'); // Default to false if not set
 
       const aiEnabledValue = await wailsAPI.settings.get('ai_publish_assist');
       setAIPublishEnabled(aiEnabledValue !== 'false');

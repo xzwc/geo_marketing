@@ -40,7 +40,7 @@ func (s *Service) CreateTask(keywords, platforms []string, queryCount int) (int6
 	}
 
 	headlessStr, _ := s.settingsRepo.Get("browser_headless")
-	headless := headlessStr != "false"
+	headless := headlessStr == "true"
 
 	taskSettings := map[string]interface{}{
 		"headless": headless,
