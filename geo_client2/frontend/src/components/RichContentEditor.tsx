@@ -224,13 +224,34 @@ export default function RichContentEditor({
 // HTML paste cleaner (minimal structure-safe cleanup)
 // Drops document-level wrappers and head/meta/style/link noise, keeps body HTML
 // ---------------------------------------------------------------------------
+const KEEP_ATTRS = ['href', 'src', 'alt', 'colspan', 'rowspan'];
+
 function cleanPastedHTML(raw: string): string {
+  // 优先用 DOMParser 做结构化清洗: 删除飞书/Lark 剪贴板元数据与噪声, 精简属性。
+  // 否则飞书粘贴的 data-lark-record-data(约30KB JSON)等会导致发布到富文本平台时乱码/未渲染。
+  try {
+    if (typeof window !== 'undefined' && window.DOMParser) {
+      const doc = new DOMParser().parseFromString(raw, 'text/html');
+      doc
+        .querySelectorAll(
+          '[data-lark-record-data], .lark-record-clipboard, br.Apple-interchange-newline, meta, link, style, head, script, noscript',
+        )
+        .forEach((el) => el.remove());
+      doc.body.querySelectorAll('*').forEach((el) => {
+        Array.from(el.attributes).forEach((a) => {
+          if (!KEEP_ATTRS.includes(a.name)) el.removeAttribute(a.name);
+        });
+      });
+      return (doc.body.innerHTML || '').trim();
+    }
+  } catch {
+    // 解析失败走正则兜底
+  }
   let out = raw;
-  // Remove full <head> block when present
+  // 删除飞书剪贴板 30KB 元数据块(乱码主因)
+  out = out.replace(/<span\b[^>]*\bdata-lark-record-data\b[\s\S]*?<\/span>/gi, '');
   out = out.replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, '');
-  // Remove document-level wrappers
   out = out.replace(/<\/?(?:html|body)\b[^>]*>/gi, '');
-  // Remove standalone meta/link/style tags that may appear in body fragments
   out = out.replace(/<(meta|link|style)\b[^>]*>\s*<\/\1>/gi, '');
   out = out.replace(/<(meta|link|style)\b[^>]*\/?>(?![^<]*<\/\1>)/gi, '');
   return out.trim();

@@ -98,10 +98,19 @@ func (b *BasePublisher) StartLogin() (func(), error) {
 }
 
 func (b *BasePublisher) Close() error {
+	var firstErr error
 	if b.prov != nil {
-		return b.prov.Close()
+		if err := b.prov.Close(); err != nil {
+			firstErr = err
+		}
 	}
-	return nil
+	// 同时关闭发布用浏览器(baseProv), 否则发布浏览器不会被回收。
+	if b.baseProv != nil {
+		if err := b.baseProv.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	return firstErr
 }
 
 // waitForResume blocks until the resume channel receives a signal or ctx is cancelled.

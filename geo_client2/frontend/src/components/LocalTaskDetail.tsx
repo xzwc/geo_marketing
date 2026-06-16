@@ -16,6 +16,7 @@ interface OverviewStats {
   recordCount: number;
   subQueryCount: number;
   citationCount: number;
+  citationList: { url: string; title: string; domain: string }[];
   uniqueDomainCount: number;
 }
 
@@ -72,6 +73,7 @@ function computeStats(records: any[]): {
 } {
   let subQueryCount = 0;
   let citationCount = 0;
+  const citationList: { url: string; title: string; domain: string }[] = [];
   const allDomains = new Set<string>();
   const domainStatsMap = new Map<string, { total: number; byKeyword: Record<string, number> }>();
   const allKeywords = new Set<string>();
@@ -89,6 +91,9 @@ function computeStats(records: any[]): {
       const domain = getDomainFromUrl(cite.url) || cite.domain;
       if (domain) {
         allDomains.add(domain);
+      }
+      if (cite.url) {
+        citationList.push({ url: cite.url, title: cite.title || cite.site_name || '', domain: domain || '' });
       }
     });
     
@@ -158,6 +163,7 @@ function computeStats(records: any[]): {
       recordCount: records.length,
       subQueryCount,
       citationCount,
+      citationList,
       uniqueDomainCount: allDomains.size,
     },
     searchStats,
@@ -167,6 +173,7 @@ function computeStats(records: any[]): {
 
 export function LocalTaskDetail({ taskId, onClose }: LocalTaskDetailProps) {
   const [loading, setLoading] = useState(true);
+  const [showCitations, setShowCitations] = useState(false);
   const [taskData, setTaskData] = useState<any>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [expandedRecords, setExpandedRecords] = useState<number[]>([]);
@@ -353,12 +360,21 @@ export function LocalTaskDetail({ taskId, onClose }: LocalTaskDetailProps) {
                       </div>
                       <div className="text-2xl font-bold">{stats.overview.subQueryCount}</div>
                     </div>
-                    <div className="p-4 bg-accent/20 rounded-lg border border-border">
+                    <div
+                      className="p-4 bg-accent/20 rounded-lg border border-border cursor-pointer hover:bg-accent/40 transition-colors"
+                      onClick={() => stats.overview.citationList.length > 0 && setShowCitations(true)}
+                      title="点击查看引用链接列表"
+                    >
                       <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
                         <Link2 className="w-4 h-4" />
                         引用链接总数
                       </div>
-                      <div className="text-2xl font-bold">{stats.overview.citationCount}</div>
+                      <div className="text-2xl font-bold flex items-center gap-1.5">
+                        {stats.overview.citationCount}
+                        {stats.overview.citationList.length > 0 && (
+                          <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
                     <div className="p-4 bg-accent/20 rounded-lg border border-border">
                       <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
@@ -668,6 +684,48 @@ export function LocalTaskDetail({ taskId, onClose }: LocalTaskDetailProps) {
           )}
         </div>
       </div>
+
+      {showCitations && stats && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setShowCitations(false)}
+        >
+          <div
+            className="bg-card border border-border rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <Link2 className="w-4 h-4" />
+                引用链接列表（{stats.overview.citationList.length}）
+              </h3>
+              <button onClick={() => setShowCitations(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2 space-y-0.5">
+              {stats.overview.citationList.length === 0 ? (
+                <div className="text-center text-muted-foreground text-sm py-8">暂无引用链接</div>
+              ) : (
+                stats.overview.citationList.map((c, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => wailsAPI.browser.openURL(c.url)}
+                    className="w-full text-left p-2 rounded hover:bg-accent/40 transition-colors group flex items-start gap-2"
+                  >
+                    <span className="text-xs text-muted-foreground w-7 shrink-0 text-right pt-0.5">{idx + 1}.</span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm text-foreground truncate group-hover:text-primary">{c.title || c.url}</span>
+                      <span className="block text-xs text-muted-foreground truncate">{c.url}</span>
+                    </span>
+                    <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5 group-hover:text-primary" />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

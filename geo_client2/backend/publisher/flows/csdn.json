@@ -71,12 +71,7 @@
     {
       "id": "select_subtags",
       "action": "eval",
-      "script": "() => { const names = ['职场和发展', '学习方法']; const norm = (s) => (s || '').replace(/\\s+/g, ' ').trim(); let clicked = 0; for (const name of names) { const el = document.querySelector('[class*=\"tag\"][title=\"' + name + '\"]') || document.querySelector('.tag-item[title=\"' + name + '\"]') || Array.from(document.querySelectorAll('span, div, label, a, li')).find(e => norm(e.textContent) === name); if (el) { el.click(); clicked++; } }
-  if (clicked === 0) {
-    const candidates = Array.from(document.querySelectorAll('[class*=\"tag\"], .tag-item, .tag-modal span, .tag-modal div')).filter(el => norm(el.textContent).length > 0);
-    if (candidates[0]) { candidates[0].click(); clicked = 1; }
-  }
-  return clicked; }"
+      "script": "() => { const names = ['职场和发展', '学习方法']; const norm = (s) => (s || '').replace(/\\s+/g, ' ').trim(); let clicked = 0; for (const name of names) { const el = document.querySelector('[class*=\"tag\"][title=\"' + name + '\"]') || document.querySelector('.tag-item[title=\"' + name + '\"]') || Array.from(document.querySelectorAll('span, div, label, a, li')).find(e => norm(e.textContent) === name); if (el) { el.click(); clicked++; } }\n  if (clicked === 0) {\n    const candidates = Array.from(document.querySelectorAll('[class*=\"tag\"], .tag-item, .tag-modal span, .tag-modal div')).filter(el => norm(el.textContent).length > 0);\n    if (candidates[0]) { candidates[0].click(); clicked = 1; }\n  }\n  return clicked; }"
     },
     {
       "id": "verify_tags_selected",

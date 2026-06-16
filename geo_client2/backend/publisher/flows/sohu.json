@@ -2,9 +2,19 @@
   "schemaVersion": 1,
   "platform": "sohu",
   "steps": [
-    {"id": "open", "action": "navigate", "url": "https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle"},
-    {"id": "wait_load", "action": "wait_load"},
-    {"id": "wait_idle", "action": "wait_idle"},
+    {
+      "id": "open",
+      "action": "navigate",
+      "url": "https://mp.sohu.com/mpfe/v4/contentManagement/news/addarticle"
+    },
+    {
+      "id": "wait_load",
+      "action": "wait_load"
+    },
+    {
+      "id": "wait_idle",
+      "action": "wait_idle"
+    },
     {
       "id": "guard_not_login",
       "action": "eval",
@@ -20,27 +30,36 @@
     {
       "id": "fill_content",
       "action": "eval",
-      "script": "(html) => { const editor = document.querySelector('#editor .ql-editor'); if (!editor) { throw new Error('editor not found'); } editor.innerHTML = html; editor.dispatchEvent(new Event('input', { bubbles: true })); editor.dispatchEvent(new Event('change', { bubbles: true })); const container = document.querySelector('#editor .ql-container') || document.querySelector('#editor'); let quill = container && (container.__quill || window.quill); if (!quill && typeof Quill !== 'undefined' && container) { quill = Quill.find(container); } if (quill && typeof quill.update === 'function') { quill.update('user'); } return true; }",
-      "args": ["{{content}}"]
+      "script": "(content) => { const ed = document.querySelector('#editor .ql-editor'); if (!ed) { return { success: false, error: 'editor not found' }; } ed.focus(); const sel = window.getSelection(); const range = document.createRange(); range.selectNodeContents(ed); sel.removeAllRanges(); sel.addRange(range); const dt = new DataTransfer(); dt.setData('text/html', content); const tmp = document.createElement('div'); tmp.innerHTML = content; dt.setData('text/plain', (tmp.innerText || tmp.textContent || '')); try { ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); } catch (e) { return { success: false, error: e.message }; } return { success: true }; }",
+      "args": [
+        "{{content}}"
+      ],
+      "checkSuccess": true
     },
     {
-      "id": "fill_content_fallback",
-      "action": "needs_manual",
+      "id": "wait_content_filled",
+      "action": "wait_eval_true",
+      "timeoutMs": 8000,
+      "ms": 500,
+      "script": "() => { const ed = document.querySelector('#editor .ql-editor'); return !!(ed && ed.innerText && ed.innerText.trim().length > 0); }"
+    },
+    {
+      "id": "fill_abstract",
+      "action": "eval",
       "optional": true,
-      "prompt": "未能自动填写搜狐正文，请手动粘贴内容后点击继续"
+      "checkSuccess": true,
+      "script": "() => { const ta = document.querySelector('textarea.abstract-main-textarea'); if (!ta) { return { success: true }; } if (ta.value && ta.value.trim().length > 0) { return { success: true }; } const ed = document.querySelector('#editor .ql-editor'); let text = ed ? (ed.innerText || '').replace(/\\s+/g, ' ').trim() : ''; if (!text) { return { success: true }; } const abstract = text.slice(0, 100); const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set; setter.call(ta, abstract); ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); return { success: true }; }"
     },
     {
-      "id": "click_abstract",
-      "action": "click_r",
-      "selector": "button",
-      "regex": "生成摘要",
-      "optional": true
+      "id": "wait_abstract",
+      "action": "wait",
+      "ms": 1000
     },
-    {"id": "wait_abstract", "action": "wait", "ms": 5000},
     {
       "id": "click_submit",
       "action": "eval",
-      "script": "() => { let btn = document.querySelector('li.publish-report-btn.active.positive-button'); if (!btn) { const all = Array.from(document.querySelectorAll('li')); btn = all.find(el => /发布/.test(el.textContent)); } if (!btn) { throw new Error('submit button not found'); } btn.click(); return true; }"
+      "script": "() => { const items = Array.from(document.querySelectorAll('li, button')); let btn = items.find(el => /publish-report-btn/.test((el.className || '').toString()) && /发布/.test(el.textContent || '')); if (!btn) { btn = items.find(el => /^发布$|立即发布|发布文章/.test((el.innerText || '').trim())); } if (!btn) { return { success: false, error: '未找到发布按钮' }; } const cls = (btn.className || '').toString(); if (/disable/.test(cls) || btn.disabled || btn.getAttribute('aria-disabled') === 'true') { const unverified = (document.body.innerText || '').includes('未实名'); return { success: false, error: '发布按钮不可用' + (unverified ? '（账号未实名认证，搜狐禁止发布文章）' : '（可能正文/标题未就绪）') }; } btn.click(); return { success: true }; }",
+      "checkSuccess": true
     },
     {
       "id": "confirm_popups",
@@ -49,17 +68,15 @@
       "script": "() => { const norm = (s) => (s || '').replace(/\\s+/g, ' ').trim(); const isVisible = (el) => { if (!el) return false; const style = window.getComputedStyle(el); if (!style || style.visibility === 'hidden' || style.display === 'none') return false; const rect = el.getBoundingClientRect(); return rect.width > 0 && rect.height > 0; }; const dialog = document.querySelector('[role=\"dialog\"], .modal, .dialog, .popup, .alert'); if (!dialog) return { skipped: true }; const btns = Array.from(dialog.querySelectorAll('button, [role=\"button\"], a')).filter(isVisible); const confirm = btns.find(b => /确定|确认|同意|知道了|继续|发布/.test(norm(b.textContent || ''))); if (confirm) { confirm.click(); return { success: true, text: norm(confirm.textContent) }; } return { skipped: true }; }"
     },
     {
-      "id": "confirm_popups_fallback",
-      "action": "needs_manual",
-      "optional": true,
-      "prompt": "搜狐发布时出现弹窗，请手动确认后点击继续"
-    },
-    {
       "id": "wait_after_publish",
       "action": "wait_url_change",
       "timeoutMs": 15000,
       "optional": true
     },
-    {"id": "post_wait", "action": "wait", "ms": 5000}
+    {
+      "id": "post_wait",
+      "action": "wait",
+      "ms": 5000
+    }
   ]
 }

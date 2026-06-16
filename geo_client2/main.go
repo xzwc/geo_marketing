@@ -18,7 +18,7 @@ func main() {
 	app := backend.NewApp()
 
 	err := wails.Run(&options.App{
-		Title:  "端界 GEO",
+		Title:  "功夫豆 GEO",
 		Width:  1200,
 		Height: 800,
 		AssetServer: &assetserver.Options{

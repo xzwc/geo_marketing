@@ -57,7 +57,7 @@ interface WailsApp {
   BatchCheckLoginStatus(): Promise<void>;
 
   // Publish
-  StartPublish(platforms: string[], accountIDs: Record<string, string>, article: { title: string; content: string; cover_image?: string }): Promise<void>;
+  StartPublish(platforms: string[], accountIDs: Record<string, string>, article: { title: string; content: string; cover_image?: string; content_format?: string }): Promise<void>;
   ResumePublish(taskID: string): Promise<void>;
   CancelPublish(taskID: string): Promise<void>;
 
@@ -386,7 +386,7 @@ export const wailsAPI = {
     startPublish: async (
       platforms: string[],
       accountIDs: Record<string, string>,
-      article: { title: string; content: string; cover_image?: string },
+      article: { title: string; content: string; cover_image?: string; content_format?: string },
     ) => {
       const app = getApp();
       if (!app) throw new Error('Wails backend not available');
@@ -407,7 +407,7 @@ export const wailsAPI = {
     start: async (
       platforms: string[],
       accountIDs: Record<string, string>,
-      article: { title: string; content: string; cover_image?: string },
+      article: { title: string; content: string; cover_image?: string; content_format?: string },
     ) => {
       const app = getApp();
       if (!app) throw new Error('Wails backend not available');

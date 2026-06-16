@@ -39,7 +39,7 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-sm space-y-6 rounded-lg border border-border bg-card p-6 shadow-sm">
         <div>
-          <h1 className="text-2xl font-bold text-center">端界 GEO</h1>
+          <h1 className="text-2xl font-bold text-center">功夫豆 GEO</h1>
           <p className="text-muted-foreground text-center text-sm mt-1">登录以继续</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">

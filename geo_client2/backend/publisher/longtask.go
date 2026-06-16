@@ -204,6 +204,10 @@ func (r *LongTaskRunner) runLoop() {
 	}
 }
 
+// platformPublishTimeout 是单个平台发布的最长等待时间。超过后跳过该平台并继续下一个,
+// 避免某平台卡在"需人工介入"等环节无限阻塞后续平台。
+const platformPublishTimeout = 60 * time.Second
+
 func (r *LongTaskRunner) processPlatform(platform string) {
 	r.mu.Lock()
 	ps := r.state.PlatformStates[platform]
@@ -266,11 +270,16 @@ func (r *LongTaskRunner) processPlatform(platform string) {
 			r.emit(event, data)
 		}
 
-		err = pub.Publish(r.ctx, r.state.Article, resumeCh, platformEmit, r.aiConfig)
+		// 给单个平台的发布加超时: 若该平台(如卡在"需人工介入")在超时内未完成,
+		// 取消它并跳到下一个平台, 避免阻塞后续平台。
+		pubCtx, cancelPub := context.WithTimeout(r.ctx, platformPublishTimeout)
+		err = pub.Publish(pubCtx, r.state.Article, resumeCh, platformEmit, r.aiConfig)
+		timedOut := pubCtx.Err() == context.DeadlineExceeded
+		cancelPub()
 		r.manager.UnregisterResumeChannel(platformTaskID)
-		pub.Close()
 
 		if err == nil || err == errAlreadyEmitted {
+			pub.Close() // 成功才关闭浏览器
 			r.mu.Lock()
 			completedNow := time.Now()
 			ps.Status = LongTaskStatusCompleted
@@ -286,10 +295,24 @@ func (r *LongTaskRunner) processPlatform(platform string) {
 			return
 		}
 
+		if timedOut {
+			// 超时(多半卡在"需人工介入"): 保留浏览器供人工接手, 不重试、不关闭。
+			lastErr = fmt.Errorf("发布超时（超过 %s 未完成，可能在等待人工操作），已保留浏览器并跳过该平台", platformPublishTimeout)
+			r.logger.Info(fmt.Sprintf("[LongTask] %s 发布超时，保留浏览器并继续下一个平台", platform))
+			r.mu.Lock()
+			ps.Retries = attempt + 1
+			r.mu.Unlock()
+			break
+		}
+
 		lastErr = err
 		r.mu.Lock()
 		ps.Retries = attempt + 1
 		r.mu.Unlock()
+		// 普通失败: 若还会重试则关掉本次浏览器避免堆积; 最后一次失败则保留供人工处理。
+		if attempt < ps.MaxRetries {
+			pub.Close()
+		}
 	}
 
 	r.mu.Lock()

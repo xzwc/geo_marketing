@@ -62,6 +62,7 @@ export function PublishTaskCreatorModal({ onClose, onCreated }: PublishTaskCreat
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
+  const [contentFormat, setContentFormat] = useState<'plain' | 'markdown'>('plain');
   const [publishStates, setPublishStates] = useState<Record<string, PlatformPublishState>>({});
   const [isPublishing, setIsPublishing] = useState(false);
 
@@ -262,6 +263,7 @@ export function PublishTaskCreatorModal({ onClose, onCreated }: PublishTaskCreat
         title: title.trim(),
         content: content.trim(),
         cover_image: coverImage.trim() || undefined,
+        content_format: contentFormat,
       });
       const taskId = (res as any)?.taskId;
 
@@ -507,6 +509,14 @@ export function PublishTaskCreatorModal({ onClose, onCreated }: PublishTaskCreat
                   )}
                 </div>
 
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-muted-foreground">正文格式</span>
+                  <div className="inline-flex rounded-md border border-border overflow-hidden text-xs">
+                    <button type="button" disabled={isPublishing} onClick={() => setContentFormat('plain')} className={contentFormat === 'plain' ? 'px-3 py-1 bg-primary text-primary-foreground' : 'px-3 py-1 bg-card text-muted-foreground hover:bg-muted'}>纯文本</button>
+                    <button type="button" disabled={isPublishing} onClick={() => setContentFormat('markdown')} className={contentFormat === 'markdown' ? 'px-3 py-1 bg-primary text-primary-foreground' : 'px-3 py-1 bg-card text-muted-foreground hover:bg-muted'}>Markdown</button>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{contentFormat === 'markdown' ? '按各平台自动转换格式发布' : '按纯文本发布，保留换行'}</span>
+                </div>
                 <RichContentEditor
                   value={content}
                   onChange={setContent}

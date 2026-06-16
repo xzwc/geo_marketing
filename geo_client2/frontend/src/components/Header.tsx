@@ -19,7 +19,7 @@ export default function Header() {
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4">
       <div className="flex items-center gap-4">
         <div className="flex items-baseline gap-2">
-          <h1 className="text-lg font-bold">端界 GEO</h1>
+          <h1 className="text-lg font-bold">功夫豆 GEO</h1>
           <span className="text-[10px] text-muted-foreground font-mono">
             v{pkg.version}
             {buildTime && (

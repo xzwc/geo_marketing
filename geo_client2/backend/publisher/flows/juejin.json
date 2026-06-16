@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "platform": "juejin",
+  "contentKind": "markdown",
   "steps": [
     {
       "id": "open",
@@ -73,10 +74,17 @@
     },
     { "id": "wait_after_tag", "action": "wait", "ms": 500 },
     {
+      "id": "wait_confirm_enabled",
+      "action": "wait_eval_true",
+      "timeoutMs": 10000,
+      "ms": 500,
+      "script": "() => { const popup = document.querySelector('.publish-popup'); if (!popup) return false; const btn = Array.from(popup.querySelectorAll('button')).find(b => b.innerText.trim() === '\u786e\u5b9a\u5e76\u53d1\u5e03'); return !!(btn && !btn.disabled); }"
+    },
+    {
       "id": "click_confirm_publish",
-      "action": "eval",
-      "checkSuccess": true,
-      "script": "() => { const popup = document.querySelector('.publish-popup'); if (!popup) return { success: false }; const btn = Array.from(popup.querySelectorAll('button')).find(b => b.innerText.trim() === '\u786e\u5b9a\u5e76\u53d1\u5e03'); if (btn && !btn.disabled) { btn.click(); return { success: true }; } return { success: false, error: btn ? 'button disabled' : 'button not found' }; }"
+      "action": "click_r",
+      "selector": ".publish-popup button",
+      "regex": "^\u786e\u5b9a\u5e76\u53d1\u5e03$"
     },
     {
       "id": "wait_published",

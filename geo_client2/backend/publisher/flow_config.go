@@ -15,9 +15,11 @@ import (
 var embeddedFlows embed.FS
 
 type Flow struct {
-	SchemaVersion int        `json:"schemaVersion"`
-	Platform      string     `json:"platform"`
-	Steps         []FlowStep `json:"steps"`
+	SchemaVersion int    `json:"schemaVersion"`
+	Platform      string `json:"platform"`
+	// ContentKind 声明该平台编辑器期望的正文类型: html(默认) | markdown。
+	ContentKind string     `json:"contentKind,omitempty"`
+	Steps       []FlowStep `json:"steps"`
 }
 
 type FlowStep struct {

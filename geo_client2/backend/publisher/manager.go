@@ -18,6 +18,8 @@ type Article struct {
 	Title      string `json:"title"`
 	Content    string `json:"content"`
 	CoverImage string `json:"cover_image,omitempty"`
+	// ContentFormat 标记 Content 的源格式: plain|markdown|html。为空时按 html(遗留)处理。
+	ContentFormat string `json:"content_format,omitempty"`
 }
 
 // PublishResult represents the result of a publish operation for one platform.
